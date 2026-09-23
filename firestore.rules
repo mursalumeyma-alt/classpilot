@@ -1,0 +1,65 @@
+rules_version = '2';
+
+// ClassPilot: every document belongs to exactly one teacher.
+// A signed-in teacher can only touch documents whose teacherId equals their
+// own uid. These rules are the real access control — the frontend queries
+// are a convenience, not a security boundary.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // The document already in the database belongs to the caller.
+    function ownsExisting() {
+      return signedIn() && resource.data.teacherId == request.auth.uid;
+    }
+
+    // The document being written belongs to the caller.
+    function ownsIncoming() {
+      return signedIn() && request.resource.data.teacherId == request.auth.uid;
+    }
+
+    match /students/{studentId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming();
+      // teacherId can never be reassigned to someone else.
+      allow update: if ownsExisting() && ownsIncoming();
+    }
+
+    match /classes/{classId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming();
+      allow update: if ownsExisting() && ownsIncoming();
+    }
+
+    match /reminders/{reminderId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming();
+      allow update: if ownsExisting() && ownsIncoming();
+    }
+
+    match /activity/{activityId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming();
+      allow update: if ownsExisting() && ownsIncoming();
+    }
+
+    match /threads/{threadId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming();
+      allow update: if ownsExisting() && ownsIncoming();
+    }
+
+    // Teacher profile extras, keyed by uid.
+    match /teachers/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Anything not matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

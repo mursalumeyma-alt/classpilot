@@ -1,0 +1,25 @@
+{
+  "name": "classpilot",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Simple class management for real teachers",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node tests/config-error.test.mjs && node tests/blank-page.test.mjs && node tests/auth.test.mjs && node tests/teacher-data.test.mjs && node tests/rules.test.mjs"
+  },
+  "dependencies": {
+    "firebase": "^12.19.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8",
+    "jsdom": "^25.0.1",
+    "esbuild": "^0.23.1"
+  }
+}
