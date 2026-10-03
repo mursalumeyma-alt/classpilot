@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { initializeFirestore } from 'firebase/firestore'
+import { getFirestore } from 'firebase/firestore'
 
 /**
  * Firebase configuration.
@@ -56,9 +56,7 @@ export let db = null
 try {
   app = initializeApp(firebaseConfig)
   auth = getAuth(app)
-db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-})
+  db = getFirestore(app)
 } catch (error) {
   firebaseConfigError = firebaseConfigError || `Firebase failed to start: ${error.message}`
   console.error('Firebase initialization failed:', error)
