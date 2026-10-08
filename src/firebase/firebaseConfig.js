@@ -25,17 +25,42 @@ const missing = Object.entries(firebaseConfig)
   .filter(([, v]) => !v)
   .map(([k]) => k)
 
+/**
+ * Human-readable explanation of why Firebase isn't working, or null if it's
+ * fine. The rest of the app checks this instead of letting Firebase throw.
+ */
+export let firebaseConfigError = null
+
 if (missing.length) {
-  console.error(
-    `Firebase config is incomplete. Missing: ${missing.join(', ')}.\n` +
+  firebaseConfigError =
+    `Firebase config is incomplete. Missing: ${missing.join(', ')}. ` +
     'Copy .env.example to .env and fill in the values from your Firebase console ' +
-    '(Project settings → General → Your apps → SDK setup and configuration).'
-  )
+    '(Project settings → General → Your apps → SDK setup and configuration). ' +
+    'On Vercel, add the same variables under Project Settings → Environment Variables, ' +
+    'then redeploy — Vite bakes them in at build time, so a new deploy is required after adding them.'
+  console.error(firebaseConfigError)
 }
 
-export const app = initializeApp(firebaseConfig)
-export const auth = getAuth(app)
-export const db = getFirestore(app)
+// initializeApp/getAuth/getFirestore run at module load time, before any
+// React component exists. If one of them throws here — which getAuth() does
+// synchronously for a bad or missing apiKey — the throw propagates up
+// through every file that imports this module (AuthContext, DataContext,
+// seed.js), which stops main.jsx before it ever calls ReactDOM.render().
+// That is what produces a blank page with nothing but a console error, even
+// though `vite build` itself succeeds. Catching it here means the rest of
+// the app loads normally and can show a real message instead.
+export let app = null
+export let auth = null
+export let db = null
+
+try {
+  app = initializeApp(firebaseConfig)
+  auth = getAuth(app)
+  db = getFirestore(app)
+} catch (error) {
+  firebaseConfigError = firebaseConfigError || `Firebase failed to start: ${error.message}`
+  console.error('Firebase initialization failed:', error)
+}
 
 /**
  * Current Firebase ID token, for calls to your own backend.
@@ -43,7 +68,7 @@ export const db = getFirestore(app)
  * than caching a copy. Send it as: Authorization: Bearer <token>
  */
 export async function getIdToken() {
-  const user = auth.currentUser
+  const user = auth?.currentUser
   if (!user) return null
   return user.getIdToken()
 }
